@@ -1,0 +1,10 @@
+{
+  "name": "legacy-cjs-dep",
+  "private": true,
+  "version": "0.0.0",
+  "main": "index.js",
+  "peerDependencies": {
+    "react": ">=16.6.0",
+    "react-dom": ">=16.6.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "fixture-08-unmounted-throw",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-legacy-compat": "*"
+  }
+}

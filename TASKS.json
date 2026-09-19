@@ -1,0 +1,158 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Scaffold monorepo layout (packages/react-legacy-compat, fixtures/, root scripts)",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "npm install at root succeeds; workspace structure matches ARCHITECTURE.md"
+    },
+    {
+      "id": "T2",
+      "title": "Implement find-dom-node.js polyfill (framework-agnostic)",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "Unit tests in packages/react-legacy-compat/test/find-dom-node.test.js pass against real react-dom@19 + jsdom: class instance -> correct DOM node, DOM node passthrough, null passthrough, unmounted -> throws"
+    },
+    {
+      "id": "T3",
+      "title": "Implement vite-plugin.js (reactLegacyCompat()) with alias + generated-shim wiring",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "resolve.alias injected only for exact 'react-dom' specifier; generated shim correctly re-exports real react-dom (every named export, not just default) via a real per-project file; other react-dom exports unaffected"
+    },
+    {
+      "id": "T4",
+      "title": "Fixture 01: named import, baseline fails + compat succeeds (dev + build)",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "Playwright assertion per EVALS.md, verified via npm run verify"
+    },
+    {
+      "id": "T5",
+      "title": "Fixture 02: namespace-call form",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "same as T4 for ReactDOM.findDOMNode(...) form"
+    },
+    {
+      "id": "T6",
+      "title": "Fixture 03: CJS require() dependency",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "same as T4 for a require('react-dom') dependency, installed as a real (non-symlinked) node_modules package"
+    },
+    {
+      "id": "T7",
+      "title": "Fixture 04: react-transition-group real package",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "CSSTransition without nodeRef mounts/unmounts cleanly under compat; fails under baseline"
+    },
+    {
+      "id": "T8",
+      "title": "Production build parity for every fixture",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "vite build + static serve reproduces same pass/fail pattern as dev for every fixture; driven by scripts/verify.mjs"
+    },
+    {
+      "id": "T9",
+      "title": "Fixture 07: StrictMode double-invoke",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "findDOMNode still resolves correct node under StrictMode"
+    },
+    {
+      "id": "T10",
+      "title": "Fixture 08: unmounted component throws",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "calling findDOMNode after unmount throws Error, not silent wrong value"
+    },
+    {
+      "id": "T11",
+      "title": "Fixture 09: other react-dom exports unaffected",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "createPortal, flushSync, react-dom/client createRoot behave identically with plugin enabled; also caught and fixed a real bug (export * silently dropping named exports)"
+    },
+    {
+      "id": "T12",
+      "title": "npm run verify: single root command wiring all of the above",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "npm run verify from clean install exits 0 iff every fixture/unit assertion above passes — verified against a fully clean node_modules removal + reinstall"
+    },
+    {
+      "id": "T13",
+      "title": "Adversarial pass: dependency pre-bundling / cross-package internal references",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "documented in ARCHITECTURE.md — found and fixed a real bug (resolveId-based interception bypassed by Vite's optimizer for cross-package internal references; fixed via resolve.alias to a generated real file)"
+    },
+    {
+      "id": "T14",
+      "title": "Adversarial pass: react-dom subpath imports (react-dom/client, react-dom/server) untouched by alias",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "confirmed exact-match alias does not intercept subpaths; covered by unit test vite-plugin.test.js and fixture 09"
+    },
+    {
+      "id": "T15",
+      "title": "Adversarial pass: SSR path (react-dom/server)",
+      "priority": "P2",
+      "status": "done",
+      "acceptance": "confirmed react-dom/server resolves and renders normally, entirely untouched by the plugin (_research/ssr-check)"
+    },
+    {
+      "id": "T16",
+      "title": "README.md with minimal install/usage example",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "npm i react-legacy-compat usage snippet matches actual working API"
+    },
+    {
+      "id": "T17",
+      "title": "FINAL_REPORT.md",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "contains all sections required by the mission's Final output spec"
+    },
+    {
+      "id": "T18",
+      "title": "Fixture 10: react-quill real package (second real third-party dependency)",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "react-quill@2.0.0's getEditingArea() (ReactDOM.findDOMNode) fails under baseline React 19, succeeds under compat, in dev and production build"
+    },
+    {
+      "id": "T19",
+      "title": "Fixture 11: React 18 differential compatibility check",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "plugin's findDOMNode override still resolves the correct node on React 18, where native findDOMNode already works — no regression"
+    },
+    {
+      "id": "T20",
+      "title": "Explicit unit-test regression coverage for full react-dom export preservation",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "packages/react-legacy-compat/test/vite-plugin.test.js asserts every real react-dom export name appears in the generated shim"
+    },
+    {
+      "id": "T21",
+      "title": "Clean-install CI workflow",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": ".github/workflows/ci.yml runs npm install + npx playwright install + npm run verify on a fresh checkout; locally verified equivalent (full node_modules removal + reinstall + verify)"
+    },
+    {
+      "id": "T22",
+      "title": "Adversarial pass: duplicate react-dom installs, package manager differences",
+      "priority": "P2",
+      "status": "done",
+      "acceptance": "analyzed and documented as a known limitation in ARCHITECTURE.md/FINAL_REPORT.md rather than built as a fixture — no real target package (react-transition-group, react-quill) exercises this, and the v0.1 scope freeze explicitly excludes hypothetical edge cases with no real-package motivation"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "react-legacy-compat-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "packages/*",
+    "fixtures/*",
+    "local-legacy-deps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/react-legacy-compat",
+    "test:unit": "node --test \"packages/react-legacy-compat/test/**/*.test.js\"",
+    "verify": "node scripts/verify.mjs"
+  },
+  "devDependencies": {
+    "vite": "8.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "playwright": "1.63.0",
+    "get-port": "7.1.0"
+  }
+}

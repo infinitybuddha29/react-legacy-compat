@@ -1,0 +1,12 @@
+{
+  "name": "fixture-11-react18-diff",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "comment": "React 18 differential check: on React 18, findDOMNode already exists natively — this plugin's shim OVERRIDES it with its own userland polyfill regardless of version. This fixture pins react/react-dom to 18.3.1 and verifies our override still resolves the correct node, i.e. that adopting this plugin doesn't regress an app that hasn't yet upgraded past React 18. Out of scope: this plugin targets React 19+ per SPEC.md — this is a safety/regression check, not a claim of supported React 18 usage.",
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-legacy-compat": "*"
+  }
+}

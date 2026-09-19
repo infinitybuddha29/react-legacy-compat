@@ -1,0 +1,12 @@
+{
+  "name": "fixture-03-cjs-require",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-legacy-compat": "*"
+  },
+  "comment_legacy-cjs-dep": "Intentionally NOT an npm-workspace dependency: workspaces symlink local packages, and Vite treats a symlinked package as 'linked source' rather than a pre-bundled dependency, which is an artifact of this monorepo layout, not of real-world npm installs. scripts/verify.mjs copies local-legacy-deps/legacy-cjs-dep into this fixture's node_modules/ as a real (non-symlinked) directory instead, matching how an actual npm-installed CJS package would be laid out."
+}

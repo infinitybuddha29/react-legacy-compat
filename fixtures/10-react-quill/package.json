@@ -1,0 +1,13 @@
+{
+  "name": "fixture-10-react-quill",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "comment": "react-quill@2.0.0 is a real, widely-used (now unmaintained) npm package whose Transition/editor wrapper calls ReactDOM.findDOMNode(this.editingArea) internally (verified: lib/index.js). Its declared peerDependencies cap react/react-dom at ^18, which is why this repo's root .npmrc sets legacy-peer-deps=true — without it `npm install` would ERESOLVE-fail before this fixture could even demonstrate the React 19 failure it exists to show.",
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-quill": "2.0.0",
+    "react-legacy-compat": "*"
+  }
+}
