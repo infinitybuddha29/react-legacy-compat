@@ -1,5 +1,7 @@
 # react-legacy-compat
 
+[![CI](https://github.com/infinitybuddha29/react-legacy-compat/actions/workflows/ci.yml/badge.svg)](https://github.com/infinitybuddha29/react-legacy-compat/actions/workflows/ci.yml)
+
 A Vite plugin that restores `ReactDOM.findDOMNode` for legacy third-party
 dependencies running under React 19+, **without editing anything inside
 `node_modules`**.
@@ -9,12 +11,30 @@ that still calls it — directly, via `ReactDOM.findDOMNode(...)`, or via
 `require('react-dom')` — throws `TypeError: ... is not a function` the
 moment that code path runs. This plugin lets those dependencies keep
 working while you migrate away from them (or while you wait for them to be
-fixed upstream).
+fixed upstream). It only patches `findDOMNode` — see
+[Known limitations](#known-limitations) for what it doesn't touch.
 
 ## Install
 
 ```bash
 npm install --save-dev react-legacy-compat
+```
+
+## Before / after
+
+```ts
+// vite.config.ts — before
+export default defineConfig({
+  plugins: [react()], // react-transition-group / react-quill crash:
+  // TypeError: ReactDOM.findDOMNode is not a function
+});
+
+// vite.config.ts — after
+import { reactLegacyCompat } from "react-legacy-compat";
+
+export default defineConfig({
+  plugins: [react(), reactLegacyCompat()], // same deps, unmodified, now work
+});
 ```
 
 ## Usage
