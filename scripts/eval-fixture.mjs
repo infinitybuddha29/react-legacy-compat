@@ -36,6 +36,23 @@ async function collectResultFromPage(url) {
       pageErrors.push(err.message);
     });
     await page.goto(url, { waitUntil: "load" });
+    // Opt-in convention for fixtures that need a real pointer interaction
+    // to reach the code path under test (e.g. fixture 12-react-draggable:
+    // the crash/fix only manifests on an actual mousedown+mousemove+mouseup
+    // sequence, not merely on mount) — a real Playwright-driven drag,
+    // since a page-side synthetic `dispatchEvent` sequence was tried first
+    // and did not reliably reach every listener the library attaches.
+    // A no-op for every other fixture (none of them render this attribute).
+    const dragTarget = await page.$("[data-drag-target]");
+    if (dragTarget) {
+      const box = await dragTarget.boundingBox();
+      if (box) {
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 30, { steps: 5 });
+        await page.mouse.up();
+      }
+    }
     let result;
     try {
       // Fixtures initialize window.__testResult to the string "pending"

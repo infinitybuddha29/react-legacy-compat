@@ -28,7 +28,8 @@
     "compatibility",
     "migration",
     "react-transition-group",
-    "react-quill"
+    "react-quill",
+    "react-draggable"
   ],
   "repository": {
     "type": "git",

@@ -1,5 +1,59 @@
 # PROGRESS.md
 
+## 2026-09-20 — Session 3: release, npm README, third real-package fixture (complete)
+
+### Result
+
+Published `react-legacy-compat@0.2.0` to npm (previously only 0.1.0 was
+live — and 0.1.0 had **no README at all** on the npm package page,
+because the published `packages/react-legacy-compat/` directory never
+contained one; only the repo root did). Tagged and released `v0.2.0` on
+GitHub. README.md rewritten (both the repo-root copy and a new
+`packages/react-legacy-compat/README.md`, now published and kept
+byte-identical to the root copy except for relative-vs-absolute cross-file
+links, since GitHub-relative links resolve wrong once read from npm's
+package directory) with a requirements table, a bundler quick-start, and
+an FAQ section — prioritizing what someone installing the package needs
+first over the original's dev/architecture-first ordering.
+
+### A fourth adversarial pass, done for outreach, not because it was asked for in isolation
+
+While looking for a second real-world GitHub issue to mention the tool in
+(the first, `zenoamaro/react-quill#1039`, already had a comment from a
+prior session), `react-grid-layout/react-draggable#771` looked promising
+at first but turned out to be already fixed upstream (react-draggable
+4.6.0+ added its own React-19 feature-detection). Its last comment linked
+a second issue, `react-grid-layout/react-draggable#670`
+(`<DraggableCore> not mounted on DragStart!`), reported as still
+reproducing on 4.7.0 with React 19. Rather than guess whether
+react-legacy-compat also fixes that one, read react-draggable's actual
+source (`node_modules/react-draggable/build/cjs/Draggable.js` at 4.7.2):
+its own `findDOMNode()` wrapper already has a
+`typeof legacyReactDOM.findDOMNode === "function"` feature-detection
+fallback — exactly what this plugin restores — but when that check fails
+(vanilla React 19), it silently returns `null` instead of throwing
+directly, and the null then trips an unrelated-looking `<DraggableCore>
+not mounted on DragStart!` invariant one call site up, in
+`handleDragStart`. Same root cause, confusing downstream symptom.
+
+Built fixture `12-react-draggable` to verify this empirically rather than
+argue it from reading the source alone — and it needed a real pointer
+interaction (mousedown → mousemove → mouseup) to reach the crash at all;
+merely mounting the component doesn't. A page-side synthetic
+`dispatchEvent` sequence was tried first and reproduced `onStart` but
+never `onDrag`/`onStop` — not investigated further since it wasn't the
+point; switched to a real Playwright-driven mouse drag instead, which
+reproduced the exact `#670` error on baseline and the full, correct
+`onStart`/`onDrag`/`onStop` lifecycle under compat, in both dev and
+production build. Generalized this into `scripts/eval-fixture.mjs` as an
+opt-in `data-drag-target` convention (any fixture element with that
+attribute gets a real driven drag before `window.__testResult` is
+awaited) rather than one-off scripting it, since "a library needs an
+actual interaction, not just a mount, to reach its `findDOMNode` call
+site" is a real category, not specific to react-draggable. Confirmed a
+no-op for every pre-existing fixture via a full `npm run verify` re-run
+after the change.
+
 ## 2026-09-20 — Session 2: webpack 5 support (complete)
 
 ### Result

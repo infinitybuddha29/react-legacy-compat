@@ -103,6 +103,7 @@ const FIXTURES = [
   { name: "09-other-exports", baselineShouldSucceed: true },
   { name: "10-react-quill" },
   { name: "11-react18-diff", baselineShouldSucceed: true },
+  { name: "12-react-draggable" },
 ];
 
 function clearFixtureCaches(fixture) {

@@ -209,6 +209,27 @@
       "priority": "P0",
       "status": "done",
       "acceptance": "usage snippet, non-goals, alias-technique rationale, and fixture matrix all reflect webpack 5 as a second supported bundler, scoped explicitly to webpack 5 (not 4, not a version matrix)"
+    },
+    {
+      "id": "T31",
+      "title": "Fixture 12-react-draggable: third real npm package, verifies react-draggable#670 ('<DraggableCore> not mounted on DragStart!') is also fixed",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "baseline (real Playwright-driven mousedown/mousemove/mouseup, no plugin) reproduces the exact error text from react-grid-layout/react-draggable#670; compat (plugin enabled) completes the full onStart/onDrag/onStop lifecycle with the correct final position, in both dev and production build; root cause confirmed by reading react-draggable's own source (its findDOMNode() wrapper falls back to legacyReactDOM.findDOMNode(this), the same call pattern already covered by find-dom-node.test.js) before writing the fixture, not asserted on faith"
+    },
+    {
+      "id": "T32",
+      "title": "scripts/eval-fixture.mjs: generic data-drag-target convention for fixtures needing a real interaction, not just a mount-time assertion",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "an element with data-drag-target on the page triggers a real Playwright mouse drag before window.__testResult is awaited; a no-op for every fixture without one (verified: full npm run verify still green across all pre-existing fixtures after this change) — added after a page-side dispatchEvent('mousedown'/'mousemove'/'mouseup') sequence was tried first and did not reliably reach every listener react-draggable attaches (reproduced onStart but not onDrag/onStop)"
+    },
+    {
+      "id": "T33",
+      "title": "README.md (root and packages/react-legacy-compat/README.md) kept byte-identical except for relative-vs-absolute cross-file links",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "packages/react-legacy-compat/README.md added (previously missing — the published 0.1.0 npm package had no README at all) and included in package.json's files array; both copies diffed after every edit to confirm no unintentional drift"
     }
   ]
 }

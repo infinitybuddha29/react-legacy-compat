@@ -106,10 +106,13 @@ production-build mode:
 - A direct named import (`import { findDOMNode } from 'react-dom'`)
 - The namespace/default-import call style (`ReactDOM.findDOMNode(...)`)
 - A plain CommonJS dependency (`require('react-dom')`)
-- Two real, unmodified npm packages: **react-transition-group**
-  (`<CSSTransition>` without `nodeRef`) and **react-quill** (a widely-used,
+- Three real, unmodified npm packages: **react-transition-group**
+  (`<CSSTransition>` without `nodeRef`), **react-quill** (a widely-used,
   now-unmaintained editor component capped at React 18 in its own
-  `peerDependencies`)
+  `peerDependencies`), and **react-draggable** — including the
+  `<DraggableCore> not mounted on DragStart!` crash reported in
+  [react-draggable#670](https://github.com/react-grid-layout/react-draggable/issues/670),
+  which only reproduces on a real drag interaction, not merely on mount
 - `<React.StrictMode>`
 - Calling `findDOMNode` on an already-unmounted component (throws, as the
   original did — it does not return a stale or wrong node)
