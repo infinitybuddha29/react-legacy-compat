@@ -37,13 +37,17 @@ failure:
 
 1. `npm run build` in `packages/react-legacy-compat` (the plugin itself must
    build/typecheck cleanly).
-2. `npm test` — unit tests for `find-dom-node.js` (the polyfill) against the
-   actually-installed `react-dom`, using `jsdom` + `react-dom/client` +
-   `act`, independent of any fixture app.
-3. For each fixture: baseline (no plugin) dev assertion → must observe the
-   documented React 19 failure. Then compat (plugin enabled) dev assertion →
-   must succeed. Then compat prod build + static-serve assertion → must
-   succeed.
+2. `npm test` — unit tests for `find-dom-node.js` (the polyfill), the Vite
+   plugin, and the webpack plugin, against the actually-installed
+   `react-dom`, using `jsdom` + `react-dom/client` + `act`, independent of
+   any fixture app.
+3. For each Vite fixture: baseline (no plugin) dev assertion → must observe
+   the documented React 19 failure. Then compat (plugin enabled) dev
+   assertion → must succeed. Then compat prod build + static-serve
+   assertion → must succeed.
+4. For each webpack fixture (see "Webpack 5 fixtures" below): the same
+   baseline/compat pattern, in both webpack `development` and `production`
+   mode.
 
 Total: one command, deterministic, no manual steps, safe to run from a
 clean `npm install` (`npm run verify` itself does not require pre-existing
@@ -62,6 +66,42 @@ harness script, OR (for the CJS/build cases where the error may surface as
 an unhandled exception that crashes rendering) asserting the target DOM
 node relevant to the test never gets its expected `data-mounted` marker
 attribute.
+
+## Webpack 5 fixtures (`fixtures/w*`)
+
+A smaller, representative subset of the Vite matrix above — not all 11
+fixtures duplicated — see PROGRESS.md's 2026-09-20 session entry and
+`scripts/verify.mjs`'s `WEBPACK_FIXTURES` comment for why: the shim-
+generation logic most Vite fixtures exist to exercise
+(`generateReactDomShim`, in `src/shim.js`) is shared, unchanged, between
+both plugins, so it's already covered. What's bundler-specific is only the
+alias-wiring, which this subset targets directly, plus one real
+third-party package end-to-end:
+
+| Fixture | Import style under test | Notes |
+|---|---|---|
+| `w01-named-import` | `import { findDOMNode } from 'react-dom'` | webpack counterpart of `01-named-import` |
+| `w03-cjs-require` | `const ReactDOM = require('react-dom')` inside a real (non-symlinked) `node_modules` CJS package | webpack counterpart of `03-cjs-require`; the closest webpack analog to the cross-package-internal-reference case that forced Vite onto `resolve.alias` (see ARCHITECTURE.md's "Webpack support") |
+| `w04-react-transition-group` | real npm package `react-transition-group` `<CSSTransition>` without `nodeRef` | webpack counterpart of `04-react-transition-group` |
+
+The "other react-dom exports unaffected" and "alias doesn't intercept
+`react-dom/client`/`react-dom/server`" concerns (fixture `09-other-exports`
+for Vite) are covered for webpack by unit tests in
+`webpack-plugin.test.js` instead of a browser fixture, since they're
+assertions about the shared shim content and the alias key's shape, not
+something that needs a real page — `generateReactDomShim`'s "every export
+preserved" behavior is already asserted once, exhaustively, by
+`vite-plugin.test.js` against the same shared function.
+
+Each webpack fixture is run in both webpack's `development` and
+`production` `mode`, driven by `scripts/eval-fixture-webpack.mjs` (webpack
+Node API → static-file-serve the output → Playwright, mirroring
+`eval-fixture.mjs`'s dev/build split for Vite). Unlike Vite, this
+dimension doesn't exercise a materially different *resolution* code path
+for webpack (no separate pre-bundler to diverge from) — mainly
+minification/mode-dependent codegen — so it isn't claimed to carry the
+same evidentiary weight as Vite's dev/build split; it's still run both
+ways for consistency and because it's cheap.
 
 ## What counts as "demonstrates success"
 

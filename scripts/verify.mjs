@@ -44,18 +44,14 @@ function run(cmd, args, opts = {}) {
 section("Fixture setup");
 {
   const src = path.join(ROOT, "local-legacy-deps", "legacy-cjs-dep");
-  const dest = path.join(
-    ROOT,
-    "fixtures",
-    "03-cjs-require",
-    "node_modules",
-    "legacy-cjs-dep"
-  );
-  fs.mkdirSync(dest, { recursive: true });
-  for (const file of ["package.json", "index.js"]) {
-    fs.copyFileSync(path.join(src, file), path.join(dest, file));
+  for (const fixture of ["03-cjs-require", "w03-cjs-require"]) {
+    const dest = path.join(ROOT, "fixtures", fixture, "node_modules", "legacy-cjs-dep");
+    fs.mkdirSync(dest, { recursive: true });
+    for (const file of ["package.json", "index.js"]) {
+      fs.copyFileSync(path.join(src, file), path.join(dest, file));
+    }
+    pass(`legacy-cjs-dep installed as a real node_modules package for fixture ${fixture}`);
   }
-  pass("legacy-cjs-dep installed as a real node_modules package for fixture 03");
 }
 
 // --- 1. Package build/sanity check ---
@@ -75,6 +71,7 @@ try {
     "--test",
     "packages/react-legacy-compat/test/find-dom-node.test.js",
     "packages/react-legacy-compat/test/vite-plugin.test.js",
+    "packages/react-legacy-compat/test/webpack-plugin.test.js",
   ]); // kept explicit rather than a glob so `npm run verify` fails loudly
      // (ENOENT) if either file is ever renamed, instead of silently running 0 tests.
   const summaryLine = out.split("\n").find((l) => l.startsWith("# pass"));
@@ -180,6 +177,75 @@ for (const { name: fixture, skipBaselineFailureCheck, baselineShouldSucceed } of
     }
   } catch (err) {
     fail(`compat build run crashed: ${err.stdout || err.message}`);
+  }
+}
+
+// --- 4. webpack fixtures ---
+// Same "baseline fails, compat succeeds" principle as the Vite fixtures
+// above, run through webpack 5 instead. A smaller, representative subset
+// (not the full Vite matrix) by explicit scope decision — see
+// PROGRESS.md's "webpack 5 support" session entry: this is a second
+// bundler integration, not a second copy of every adversarial case, and
+// the shim-generation logic under test (generateReactDomShim, in
+// src/shim.js) is exactly the same code already exercised by every Vite
+// fixture above plus the dedicated unit tests. What's genuinely new per
+// bundler is only the alias-wiring, so the webpack subset targets that:
+// a direct named import (w01), the cross-package CJS require() case that
+// forced Vite off resolveId in the first place (w03), and a real,
+// unmodified third-party package (w04).
+const WEBPACK_FIXTURES = [
+  { name: "w01-named-import" },
+  { name: "w03-cjs-require" },
+  { name: "w04-react-transition-group" },
+];
+
+function evalFixtureWebpack(fixture, mode, compat) {
+  const out = run("node", [
+    "scripts/eval-fixture-webpack.mjs",
+    fixture,
+    mode,
+    compat ? "1" : "0",
+  ]);
+  return JSON.parse(out);
+}
+
+for (const { name: fixture } of WEBPACK_FIXTURES) {
+  section(`Webpack fixture: ${fixture}`);
+  clearFixtureCaches(fixture);
+
+  try {
+    const { result } = evalFixtureWebpack(fixture, "dev", false);
+    if (result.ok === false) {
+      pass(`baseline (webpack development, no plugin) correctly fails: ${result.error ?? JSON.stringify(result)}`);
+    } else {
+      fail(`baseline (webpack development, no plugin) did NOT fail as expected — got: ${JSON.stringify(result)}`);
+    }
+  } catch (err) {
+    fail(`baseline webpack development run crashed: ${err.stdout || err.message}`);
+  }
+
+  clearFixtureCaches(fixture);
+  try {
+    const { result } = evalFixtureWebpack(fixture, "dev", true);
+    if (result.ok === true) {
+      pass(`compat (webpack development, plugin enabled) succeeds`);
+    } else {
+      fail(`compat (webpack development) FAILED: ${JSON.stringify(result)}`);
+    }
+  } catch (err) {
+    fail(`compat webpack development run crashed: ${err.stdout || err.message}`);
+  }
+
+  clearFixtureCaches(fixture);
+  try {
+    const { result } = evalFixtureWebpack(fixture, "build", true);
+    if (result.ok === true) {
+      pass(`compat (webpack production build) succeeds`);
+    } else {
+      fail(`compat (webpack production build) FAILED: ${JSON.stringify(result)}`);
+    }
+  } catch (err) {
+    fail(`compat webpack production build run crashed: ${err.stdout || err.message}`);
   }
 }
 

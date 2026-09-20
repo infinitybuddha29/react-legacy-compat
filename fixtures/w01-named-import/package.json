@@ -1,0 +1,11 @@
+{
+  "name": "fixture-w01-named-import",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-legacy-compat": "*"
+  }
+}

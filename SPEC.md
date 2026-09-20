@@ -14,19 +14,25 @@ inside a dependency's compiled source.
 
 ## Goal
 
-A Vite plugin, installed and configured only in the *application's*
-`vite.config`, that lets such legacy dependencies keep calling
-`findDOMNode` and get back the correct host DOM node, in development and in
-production builds, **without the application author editing any file inside
-`node_modules`** and without forking/patching the legacy package.
+A Vite plugin and a webpack 5 plugin, installed and configured only in the
+*application's* `vite.config` (or, for webpack, its `webpack.config`), that
+let such legacy dependencies keep calling `findDOMNode` and get back the
+correct host DOM node, in development and in production builds, **without
+the application author editing any file inside `node_modules`** and
+without forking/patching the legacy package.
 
 ## Non-goals
 
 - Restoring `findDOMNode` as a *supported*, forward-looking API for new
   application code to call. This is a compatibility shim for legacy
   dependencies, not a recommended pattern.
-- Supporting bundlers other than Vite. (The technique may generalize, but
-  only Vite is in scope for this project.)
+- Supporting bundlers other than Vite and webpack 5. (The core technique —
+  resolve real `react-dom`, generate a shim re-exporting its real exports
+  plus a userland `findDOMNode`, alias the exact `react-dom` specifier to
+  it — is bundler-agnostic and may generalize further, but only Vite and
+  webpack 5 are in scope for this project. webpack **4** specifically is
+  out of scope: `peerDependencies.webpack` is `>=5.0.0`, untested and
+  unsupported below that.)
 - Supporting class-component-free findDOMNode use cases that never existed
   (e.g. findDOMNode on a function component instance — this was never valid
   even in React ≤18, since function components have no instance).
@@ -52,6 +58,16 @@ import { reactLegacyCompat } from "react-legacy-compat";
 export default defineConfig({
   plugins: [reactLegacyCompat()],
 });
+```
+
+or, for a webpack 5 application:
+
+```ts
+import { reactLegacyCompatWebpack } from "react-legacy-compat";
+
+module.exports = {
+  plugins: [reactLegacyCompatWebpack()],
+};
 ```
 
 then:
@@ -81,7 +97,8 @@ then:
   dependency's source.
 - Must work for the dependency being pre-bundled by Vite's dependency
   optimizer (`optimizeDeps`) in dev, and bundled by Rollup in
-  `vite build`.
+  `vite build` — and, for the webpack 5 plugin, bundled by webpack itself
+  in both `development` and `production` mode.
 - Must not silently produce a *wrong* DOM node — if the correct node cannot
   be determined, throwing (matching legacy behavior for unmounted
   components) is preferred over returning a wrong node.

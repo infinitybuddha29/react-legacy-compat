@@ -1,5 +1,77 @@
 # PROGRESS.md
 
+## 2026-09-20 — Session 2: webpack 5 support (complete)
+
+### Result
+
+`npm run verify` (extended, still the single entry point) passes: the
+full original Vite suite (11 fixtures × {dev, build} × unit tests,
+unchanged) plus 3 new webpack 5 fixtures × {development, production} ×
+{baseline, compat}. Scoped to webpack 5 only, per explicit user
+instruction — no webpack 4 support, no version matrix.
+
+### Architecture
+
+The shim-generation logic (resolve real `react-dom`, `require()` it once
+to enumerate its real exports, write the generated
+`node_modules/.react-legacy-compat/react-dom-shim.js`) was bundler-
+agnostic already in spirit (ARCHITECTURE.md's original "Known
+limitations" called this out) but lived inline inside `vite-plugin.js`.
+Extracted verbatim into `src/shim.js` (`generateReactDomShim({ root })`),
+with `vite-plugin.js` updated to call it — no behavior change, confirmed
+by the unmodified `vite-plugin.test.js` still passing against the
+refactor.
+
+`webpack-plugin.js` (`reactLegacyCompatWebpack()`) calls the same shared
+function and wires the result in via webpack's own exact-match alias
+syntax (`{ "react-dom$": shimPath }`, set on `compiler.options.resolve`
+directly inside `apply()`), instead of Vite's `config()`-hook-returned
+`resolve.alias` array. See ARCHITECTURE.md's new "Webpack support"
+section for why the technique transfers without rediscovering any of
+Vite's own two rejected intermediate designs — webpack has no separate
+dependency-optimizer pass for `resolve.alias` to need to reach *around*.
+
+### Scope decisions (both per explicit user instruction)
+
+1. **webpack 5 only.** `peerDependencies.webpack` set to `>=5.0.0`;
+   nothing here is tested against or claims to support webpack 4.
+2. **A representative fixture subset, not the full 11-fixture Vite
+   matrix.** `generateReactDomShim` — the part of the logic most fixtures
+   exist to exercise — is already fully covered by the *existing* Vite
+   fixtures and by `vite-plugin.test.js`'s explicit "every real export
+   preserved" regression test, and that coverage transfers unchanged
+   because it's the same function. What's actually bundler-specific is
+   only the alias wiring, so the webpack fixtures (`w01-named-import`,
+   `w03-cjs-require`, `w04-react-transition-group`) were chosen to cover:
+   a direct named import, the cross-package CJS `require()` case (the
+   closest webpack analog to the cross-package-reference problem that
+   forced Vite onto `resolve.alias` in the first place), and one real,
+   unmodified third-party package end-to-end. The "other exports
+   unaffected" and "exact-match doesn't intercept subpaths" concerns are
+   instead covered by webpack-specific unit tests in
+   `webpack-plugin.test.js`, since they're really assertions about the
+   shared shim/alias-key shape, not something that needs a browser.
+
+### Notes on the webpack harness (`scripts/eval-fixture-webpack.mjs`)
+
+- Unlike Vite, webpack has no separate dev-server module-resolution path
+  distinct from production bundling (no esbuild/Rolldown-style
+  pre-bundler to diverge from). "development" vs "production" for the
+  webpack fixtures maps to webpack's own `mode` option and mainly
+  exercises minification/mode-dependent codegen, not a materially
+  different resolution code path the way Vite's dev-vs-build split does.
+  Documented as such rather than implied to be an equivalent-strength
+  signal to the Vite dev/build split.
+- `@babel/preset-react`'s automatic JSX runtime needed `development:
+  false` pinned explicitly in every fixture's `babel-loader` options —
+  left to its default, the dev/production choice of `react/jsx-dev-
+  runtime` vs `react/jsx-runtime` came out inconsistent between webpack's
+  `development` and `production` modes in a way unrelated to this
+  project's actual subject (module resolution), producing an unrelated
+  `jsxDEV is not a function` failure caught while building `w01-named-
+  import`'s production case. Pinning it removed the inconsistency; not
+  investigated further since it's orthogonal to what's being verified.
+
 ## 2026-09-19 — Session 1 (complete)
 
 ### Result

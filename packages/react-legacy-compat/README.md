@@ -100,8 +100,8 @@ an unrelated reason, this won't fix that — see
 
 ## What's verified
 
-`npm run verify` (see [EVALS.md](./EVALS.md)) exercises, in both dev and
-production-build mode:
+`npm run verify` (see [EVALS.md](https://github.com/infinitybuddha29/react-legacy-compat/blob/main/EVALS.md))
+exercises, in both dev and production-build mode:
 
 - A direct named import (`import { findDOMNode } from 'react-dom'`)
 - The namespace/default-import call style (`ReactDOM.findDOMNode(...)`)
@@ -122,7 +122,7 @@ production-build mode:
 The webpack plugin is verified against a representative subset of the
 same cases (a direct named import, a CommonJS `require('react-dom')`
 dependency, and react-transition-group) in both webpack `development` and
-`production` mode — see [EVALS.md](./EVALS.md) for why it's a subset
+`production` mode — see EVALS.md (linked above) for why it's a subset
 rather than the full list.
 
 ## Known limitations
@@ -149,18 +149,24 @@ generates a small shim re-exporting everything it exports plus a userland
 generated file. The `findDOMNode` implementation walks the React Fiber
 tree the same way React's own removed implementation did. Full rationale,
 the alternatives that were tried and rejected, and exactly what unsupported
-internal is relied upon: see [ARCHITECTURE.md](./ARCHITECTURE.md).
+internal is relied upon:
+[ARCHITECTURE.md](https://github.com/infinitybuddha29/react-legacy-compat/blob/main/ARCHITECTURE.md).
 
 ## Development
 
-This repo is the plugin's own monorepo (not something you need to clone
-just to use the package above).
+This package is published from a monorepo (not something you need to
+clone just to use the package above):
+[github.com/infinitybuddha29/react-legacy-compat](https://github.com/infinitybuddha29/react-legacy-compat).
 
 ```bash
 npm install
 npm run verify
 ```
 
-See [SPEC.md](./SPEC.md), [ARCHITECTURE.md](./ARCHITECTURE.md),
-[EVALS.md](./EVALS.md), and [FINAL_REPORT.md](./FINAL_REPORT.md) for the
-full research and design record.
+See
+[SPEC.md](https://github.com/infinitybuddha29/react-legacy-compat/blob/main/SPEC.md),
+[ARCHITECTURE.md](https://github.com/infinitybuddha29/react-legacy-compat/blob/main/ARCHITECTURE.md),
+[EVALS.md](https://github.com/infinitybuddha29/react-legacy-compat/blob/main/EVALS.md),
+and
+[FINAL_REPORT.md](https://github.com/infinitybuddha29/react-legacy-compat/blob/main/FINAL_REPORT.md)
+for the full research and design record.

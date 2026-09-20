@@ -196,14 +196,23 @@ Rolldown regression, which ruled out "just avoid Rolldown" as a fix.
 ```
 react-legacy-compat/
   src/
-    vite-plugin.js     # reactLegacyCompat(): generates the shim file + resolve.alias
-    find-dom-node.js   # the userland polyfill (framework-agnostic, no Vite API)
-  index.js             # re-exports { reactLegacyCompat, findDOMNode }
+    shim.js             # generateReactDomShim(): bundler-agnostic — resolves
+                         # real react-dom, writes the generated shim file
+    vite-plugin.js       # reactLegacyCompat(): calls shim.js, wires resolve.alias
+    webpack-plugin.js    # reactLegacyCompatWebpack(): calls shim.js, wires
+                         # compiler.options.resolve.alias (webpack 5 only)
+    find-dom-node.js     # the userland polyfill (framework-agnostic, no
+                         # bundler API at all)
+  index.js               # re-exports { reactLegacyCompat,
+                         #   reactLegacyCompatWebpack, findDOMNode }
 ```
 
 There is no `react-dom-shim.js` template shipped in the package — the shim
-is generated per-project at `config()` time (see D above), because it
+is generated per-project, at Vite's `config()` time or webpack's
+`apply()` time (see D above and "Webpack support" below), because it
 needs that project's own resolved absolute `react-dom` path baked in.
+`generateReactDomShim` itself (in `src/shim.js`) takes no bundler as
+input — just `{ root }` — and is shared unchanged between both plugins.
 
 Module resolution flow for an app with the plugin enabled:
 
@@ -235,6 +244,93 @@ The generated file imports the real react-dom via a concrete absolute
 path (e.g. `/Users/.../node_modules/react-dom/index.js`), never the bare
 string `"react-dom"` — which is what lets the same alias rule apply
 uniformly, importer-blind, without an infinite self-reference loop.
+
+## Webpack support
+
+Added after the Vite-only v0.1 (per explicit user instruction, scoped to
+webpack **5** only — `peerDependencies.webpack` is `>=5.0.0`; webpack 4 is
+untested and unsupported). `webpack-plugin.js`'s `apply(compiler)` calls
+the exact same `generateReactDomShim({ root: compiler.context })` used by
+`vite-plugin.js`, then wires the result in using webpack's own
+exact-match alias syntax:
+
+```js
+compiler.options.resolve.alias = {
+  ...compiler.options.resolve.alias,
+  "react-dom$": shimPath,
+};
+```
+
+set directly in `apply()` — before `WebpackOptionsApply` normalizes
+resolver options from `compiler.options` and before any compilation runs,
+so there's nothing to race, and no `compiler.hooks` tap is needed.
+
+Why this transfers cleanly, rather than needing its own D1/D2-style
+rediscovery process:
+
+- **webpack's `resolve.alias` supports exact-match natively**, via a `$`
+  suffix on the key. Vite needed an explicitly anchored regex
+  (`{ find: /^react-dom$/, replacement }`) to get the same effect; webpack
+  just needs the key spelled `"react-dom$"`. Confirmed by unit test
+  (`webpack-plugin.test.js`): `react-dom/client` and `react-dom/server`
+  are not intercepted, with no extra logic required.
+- **The cross-package-internal-reference problem that forced Vite off a
+  `resolveId` hook and onto `resolve.alias` (design D1/D2 above) does not
+  need to be independently rediscovered for webpack, because webpack has
+  no separate dependency-pre-bundling pass in the first place.** Vite's
+  `optimizeDeps` (esbuild in dev, and — separately — Rolldown-backed
+  behavior in some configurations) resolves a bare `react-dom` import
+  *from inside* another dependency (e.g. react-transition-group) through
+  its own internal linking, bypassing a plugin's `resolveId` hook
+  entirely; `resolve.alias` was the fix because it substitutes the
+  specifier text before that separate graph is even built. webpack has
+  only one resolution pass — the same `enhanced-resolve`-based resolver,
+  configured by `compiler.options.resolve`, handles every specifier,
+  direct application imports and imports from inside another package
+  alike. So `resolve.alias` is simply *the* normal way to redirect a
+  specifier in webpack, not a workaround for a bypass problem that would
+  otherwise exist. Verified directly by fixture `w03-cjs-require` (a
+  `require('react-dom')` from inside a real, non-symlinked
+  `node_modules` package) and `w04-react-transition-group` (a real,
+  unmodified third-party dependency) — no `resolveId`-equivalent hook was
+  ever attempted or needed for webpack.
+- **The same self-reference hazard exists and is avoided the same way.**
+  react-dom's own internal `require("react-dom")` self-reference would
+  loop back on itself under a naive, importer-blind alias exactly as it
+  did for Vite (see design D above) — sidestepped identically, because the
+  alias target is a generated file with the real, concrete react-dom path
+  already baked in as a literal string, which the alias rule (matching
+  only the literal specifier `"react-dom"`) never matches.
+- **Named exports are enumerated the same way, because it's the same
+  function.** `generateReactDomShim` actually `require()`s react-dom once
+  to enumerate its real export names, rather than `export * from
+  <realPath>` — a decision made for Vite (see design D above, and fixture
+  09) but which transfers as-is; no webpack-specific re-verification of
+  this point was needed since the shim file webpack aliases to is
+  byte-for-byte the same kind of file Vite aliases to, produced by the
+  same code.
+
+No new unsupported-internals dependency is introduced: `findDOMNode`
+itself (`find-dom-node.js`) is untouched and bundler-agnostic already: see
+"Known unsupported-internals risk" below, which applies identically
+regardless of which plugin generated the shim that imports it.
+
+### Webpack-specific gaps (documented, not built into a fixture)
+
+Same scope-freeze precedent as "Known limitation: duplicate react-dom
+installs" below — analyzed, not exercised by a real target package:
+
+- **Array-form `resolve.alias`.** webpack also accepts
+  `resolve.alias: [{ name, alias, onlyModule }, ...]`; `webpack-plugin.js`
+  only merges into an existing *object*-form `resolve.alias`. Not
+  exercised by any real fixture or target package.
+- **webpack 4.** Not tested, not in `peerDependencies` range, not a goal
+  of this session's scope (see SPEC.md).
+- **Module Federation / multi-compiler setups with per-compiler
+  `resolve.alias` overrides elsewhere in the config chain** (e.g. a
+  federation remote supplying its own `react-dom`) are not specifically
+  tested — no real target package in this project's verified set exercises
+  Module Federation.
 
 ## Known unsupported-internals risk (tracked, not hidden)
 

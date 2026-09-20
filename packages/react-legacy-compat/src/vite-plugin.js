@@ -1,13 +1,5 @@
-import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIND_DOM_NODE_PATH = path
-  .join(__dirname, "find-dom-node.js")
-  .split(path.sep)
-  .join("/");
+import { generateReactDomShim } from "./shim.js";
 
 /**
  * Vite plugin restoring `findDOMNode` for legacy dependencies that call it
@@ -40,17 +32,9 @@ const FIND_DOM_NODE_PATH = path
  * a literal string. Because that literal path is not the string
  * "react-dom", the same alias rule never matches it — the self-reference
  * problem disappears without needing any importer-based exemption logic.
- *
- * The generated shim doesn't use `export * from <realPath>` to forward
- * react-dom's other exports (createPortal, flushSync, etc.): Vite's
- * dependency optimizer's static CJS-named-export detection doesn't see
- * through react-dom's `index.js` (`module.exports = require('./cjs/...')`
- * indirection), so a wildcard re-export silently surfaced nothing but
- * `default` (caught by the fixture 09 regression test). Instead this
- * plugin actually `require()`s react-dom once, in Node, at config time —
- * fully executing it is safe (only *calling* its exports touches the DOM,
- * defining them doesn't) — and emits one explicit `export const name = ...`
- * per real export name, which needs no bundler-side CJS inference at all.
+ * The shim-generation itself (`generateReactDomShim`, in `./shim.js`) is
+ * bundler-agnostic and shared with `webpack-plugin.js` — only the alias
+ * wiring below is Vite-specific.
  *
  * Verified working, with no additional configuration, for: a direct named
  * import, a namespace/default-import call style, a plain CommonJS
@@ -66,63 +50,7 @@ export function reactLegacyCompat() {
 
     config(config) {
       const root = config.root ? path.resolve(config.root) : process.cwd();
-      const shimDir = path.join(root, "node_modules", ".react-legacy-compat");
-      const shimPath = path.join(shimDir, "react-dom-shim.js");
-
-      const require = createRequire(path.join(root, "package.json"));
-      let realReactDom;
-      let realReactDomPath;
-      try {
-        realReactDomPath = require.resolve("react-dom");
-        // Actually executing react-dom (safe: defining its exports doesn't
-        // touch the DOM, only *calling* them does) to enumerate its real
-        // export names ourselves, rather than emitting `export * from
-        // <realPath>` and relying on the bundler's own static CJS-export
-        // detection — verified that detection does NOT see through
-        // react-dom's `index.js` (`module.exports = require('./cjs/...')`)
-        // indirection: an `export *` re-export from realPath only ever
-        // surfaced `default`, silently dropping createPortal, flushSync,
-        // and everything else (caught by fixture 09). Enumerating via a
-        // real require() call is exactly as accurate as Node's own
-        // resolution, so there's no guessing involved.
-        realReactDom = require(realReactDomPath);
-      } catch (err) {
-        throw new Error(
-          "[react-legacy-compat] Could not resolve/load 'react-dom' from " +
-            root +
-            ". Is react-dom installed? (" +
-            err.message +
-            ")"
-        );
-      }
-
-      fs.mkdirSync(shimDir, { recursive: true });
-      const realPathUrl = JSON.stringify(
-        realReactDomPath.split(path.sep).join("/")
-      );
-      const polyfillPathUrl = JSON.stringify(FIND_DOM_NODE_PATH);
-      const VALID_IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-      const realExportNames = Object.keys(realReactDom).filter(
-        (key) =>
-          key !== "default" &&
-          key !== "findDOMNode" &&
-          VALID_IDENTIFIER.test(key)
-      );
-
-      fs.writeFileSync(
-        shimPath,
-        [
-          `import * as __real from ${realPathUrl};`,
-          `import { findDOMNode as __findDOMNode } from ${polyfillPathUrl};`,
-          `const __base = __real.default || __real;`,
-          ...realExportNames.map(
-            (name) => `export const ${name} = __base[${JSON.stringify(name)}];`
-          ),
-          `export { findDOMNode } from ${polyfillPathUrl};`,
-          `export default Object.assign({}, __base, { findDOMNode: __findDOMNode });`,
-          "",
-        ].join("\n")
-      );
+      const { shimPath } = generateReactDomShim({ root });
 
       return {
         resolve: {

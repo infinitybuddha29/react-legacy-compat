@@ -153,6 +153,62 @@
       "priority": "P2",
       "status": "done",
       "acceptance": "analyzed and documented as a known limitation in ARCHITECTURE.md/FINAL_REPORT.md rather than built as a fixture — no real target package (react-transition-group, react-quill) exercises this, and the v0.1 scope freeze explicitly excludes hypothetical edge cases with no real-package motivation"
+    },
+    {
+      "id": "T23",
+      "title": "Extract bundler-agnostic shim generation (generateReactDomShim) out of vite-plugin.js into src/shim.js",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "vite-plugin.js and webpack-plugin.js both call the same shared function; existing vite-plugin.test.js still passes unmodified against the refactored code"
+    },
+    {
+      "id": "T24",
+      "title": "Implement webpack-plugin.js (reactLegacyCompatWebpack()) — webpack 5 only",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "apply(compiler) sets an exact-match 'react-dom$' resolve.alias to the generated shim, merges into (not clobbers) an existing resolve.alias object; unit tests in webpack-plugin.test.js pass; scoped explicitly to webpack 5 (>=5.0.0 peer range) per user instruction — webpack 4 not supported or tested"
+    },
+    {
+      "id": "T25",
+      "title": "Webpack fixture w01-named-import: direct named import, baseline fails + compat succeeds (development + production)",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "verified via npm run verify (scripts/eval-fixture-webpack.mjs)"
+    },
+    {
+      "id": "T26",
+      "title": "Webpack fixture w03-cjs-require: plain CommonJS require('react-dom') dependency",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "same real (non-symlinked) node_modules/legacy-cjs-dep setup as fixture 03-cjs-require, reused via scripts/verify.mjs; baseline fails, compat succeeds in both webpack modes"
+    },
+    {
+      "id": "T27",
+      "title": "Webpack fixture w04-react-transition-group: real npm package",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "CSSTransition without nodeRef mounts cleanly under compat; fails under baseline (page crashes before onEntered runs, captured via Playwright pageerror)"
+    },
+    {
+      "id": "T28",
+      "title": "scripts/eval-fixture-webpack.mjs: compile with webpack Node API, serve dist-eval statically, collect window.__testResult via Playwright",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "handles a webpack compile-time crash as a valid captured failure result (mirrors eval-fixture.mjs's vite-build-threw handling); wired into npm run verify"
+    },
+    {
+      "id": "T29",
+      "title": "Scope decision: webpack fixture subset, not the full 11-fixture Vite matrix",
+      "priority": "P1",
+      "status": "done",
+      "acceptance": "documented in PROGRESS.md and in scripts/verify.mjs's WEBPACK_FIXTURES comment — justified by generateReactDomShim already being fully exercised by the Vite fixtures/unit tests (T23), so the webpack subset targets only what's bundler-specific: direct import, cross-package CJS require, and one real third-party package"
+    },
+    {
+      "id": "T30",
+      "title": "README.md / SPEC.md / ARCHITECTURE.md / EVALS.md updated for webpack 5 support",
+      "priority": "P0",
+      "status": "done",
+      "acceptance": "usage snippet, non-goals, alias-technique rationale, and fixture matrix all reflect webpack 5 as a second supported bundler, scoped explicitly to webpack 5 (not 4, not a version matrix)"
     }
   ]
 }
