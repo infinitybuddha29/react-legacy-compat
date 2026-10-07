@@ -3,24 +3,28 @@
 [![npm version](https://img.shields.io/npm/v/react-legacy-compat.svg)](https://www.npmjs.com/package/react-legacy-compat)
 [![CI](https://github.com/infinitybuddha29/react-legacy-compat/actions/workflows/ci.yml/badge.svg)](https://github.com/infinitybuddha29/react-legacy-compat/actions/workflows/ci.yml)
 
-Upgraded to React 19 and now `react-transition-group`, `react-quill`, or
-some other legacy dependency crashes with:
+Upgraded to React 19 (or to Next.js 15/16, which ships React 19) and now
+`react-transition-group`, `react-quill`, `react-draggable`, or some other
+legacy dependency crashes with one of:
 
 ```
 TypeError: ReactDOM.findDOMNode is not a function
+TypeError: (0 , react_dom__WEBPACK_IMPORTED_MODULE_1__.findDOMNode) is not a function
+TypeError: (0 , __TURBOPACK__imported__module__...react-dom...findDOMNode) is not a function
+Attempted import error: 'findDOMNode' is not exported from 'react-dom'
 ```
 
 **react-legacy-compat** restores `findDOMNode` for those dependencies —
 **without editing anything inside `node_modules`**, and without forking
-or patching the broken package. One line in your Vite or webpack config
-and it's fixed.
+or patching the broken package. One line in your Next.js, Vite or webpack
+config and it's fixed.
 
 ## Requirements
 
 | | |
 |---|---|
 | React / react-dom | `>=19.0.0` |
-| Bundler | Vite `>=5.0.0` **or** webpack `>=5.0.0` (webpack 4 not supported) |
+| Framework / bundler | Next.js `>=15.3.0` (Turbopack or webpack), Vite `>=5.0.0`, **or** webpack `>=5.0.0` (webpack 4 not supported) |
 | Node | `>=18.0.0` |
 
 ## Install
@@ -31,7 +35,25 @@ npm install --save-dev react-legacy-compat
 
 ## Quick start
 
-Pick your bundler:
+Pick your framework or bundler:
+
+### Next.js
+
+```js
+// next.config.mjs
+import { withReactLegacyCompat } from "react-legacy-compat/next";
+
+const nextConfig = {
+  // ...your existing config
+};
+
+export default withReactLegacyCompat(nextConfig);
+```
+
+Works with Turbopack (the default in Next 16, and `next dev --turbopack`
+in Next 15) and with webpack (`next --webpack`), in both the App Router
+and the Pages Router. Your own `webpack()` function and `turbopack`
+options are kept. A config function (`(phase) => config`) works too.
 
 ### Vite
 
@@ -75,6 +97,14 @@ No. Only the plain `react-dom` specifier is affected, and only
 `findDOMNode` is added — `createPortal`, `flushSync`, `createRoot`, etc.
 all keep working exactly as before. Verified explicitly; see
 [What's verified](#whats-verified).
+
+**Does it work with Next.js App Router / Turbopack?**
+Yes. Next.js uses its own built-in copy of `react-dom` for the App Router
+and your installed one for the Pages Router; `withReactLegacyCompat`
+patches whichever one Next picks, so you never end up with two copies of
+React DOM. Verified under Turbopack and webpack, dev and production
+build, on Next 16.4, 15.5 and 15.3. Use `withReactLegacyCompat` here, not the
+webpack plugin.
 
 **Do I need both the Vite and webpack plugins installed?**
 No — use whichever one matches your bundler. Both ship in the same
@@ -128,15 +158,21 @@ dependency, and react-transition-group) in both webpack `development` and
 `production` mode — see [EVALS.md](./EVALS.md) for why it's a subset
 rather than the full list.
 
+The Next.js wrapper is verified (fixture `n01-next`, Next 16.4) with a
+named import, a `ReactDOM.findDOMNode(...)` call and react-transition-group,
+each on both an App Router and a Pages Router page, under Turbopack and
+under webpack, in `next dev` and in `next build` + `next start`.
+
 ## Known limitations
 
 - **Relies on an unsupported React internal** (`instance._reactInternals`).
   It is read-only and feature-detected — if a future React version changes
   its shape, the polyfill throws a clear error identifying itself rather
   than silently returning a wrong node — but this is not a guarantee.
-- **Vite and webpack 5 only.** No other bundler integration exists (no
-  Rollup-standalone, esbuild-standalone, Parcel, Rspack, ...), and webpack
-  **4** specifically is not supported.
+- **Next.js, Vite and webpack 5 only.** No other bundler integration
+  exists (no Rollup-standalone, esbuild-standalone, Parcel, Rspack, ...),
+  and webpack **4** specifically is not supported. Next.js below 15.3
+  isn't supported (its `turbopack` config key didn't exist yet).
 - **Only fixes `findDOMNode`.** Other APIs React 19 removed (string refs,
   legacy context, `unstable_renderSubtreeIntoContainer`, ...) are out of
   scope and are not patched by this plugin.
@@ -149,7 +185,10 @@ rather than the full list.
 At config time, the plugin resolves your project's real `react-dom`,
 generates a small shim re-exporting everything it exports plus a userland
 `findDOMNode`, and aliases the exact `react-dom` specifier to that
-generated file. The `findDOMNode` implementation walks the React Fiber
+generated file. On Next.js, which resolves `react-dom` to a different file
+per compilation layer, it instead adds a small loader that appends
+`findDOMNode` to whichever `react-dom` entry file Next already chose. The
+`findDOMNode` implementation walks the React Fiber
 tree the same way React's own removed implementation did. Full rationale,
 the alternatives that were tried and rejected, and exactly what unsupported
 internal is relied upon: see [ARCHITECTURE.md](./ARCHITECTURE.md).

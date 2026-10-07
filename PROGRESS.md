@@ -1,5 +1,24 @@
 # PROGRESS.md
 
+## 2026-10-07 — Session 4: Next.js support (0.3.0)
+
+### Why
+
+npm downloads after the two publish-day spikes are ~1–3/day. Reading the
+open GitHub issues about `findDOMNode is not a function`, a large share
+come from Next.js 15/16 users (amis#11361, react-datasheet-grid#378,
+react-quill#989), whom the Vite/webpack plugins couldn't help.
+
+### Result
+
+`withReactLegacyCompat(nextConfig)` from `react-legacy-compat/next` (also
+re-exported from the package root). Works under Turbopack and webpack,
+App Router and Pages Router, dev and production build. Design and the
+experiments behind it: ARCHITECTURE.md "Next.js support". New fixture
+`n01-next` + `scripts/eval-fixture-next.mjs`, wired into `npm run verify`
+(6 new checks), unit tests in `test/next.test.js`. Full `npm run verify`
+passes.
+
 ## 2026-09-20 — Session 3: release, npm README, third real-package fixture (complete)
 
 ### Result

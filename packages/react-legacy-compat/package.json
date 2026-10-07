@@ -1,11 +1,12 @@
 {
   "name": "react-legacy-compat",
-  "version": "0.2.0",
-  "description": "Vite and webpack 5 plugin restoring findDOMNode for legacy React dependencies (react-transition-group, react-quill, ...) under React 19+, without modifying their source.",
+  "version": "0.3.0",
+  "description": "Restore ReactDOM.findDOMNode under React 19 for legacy dependencies (react-transition-group, react-quill, react-draggable, ...) without patching node_modules. Works with Next.js (Turbopack + webpack), Vite and webpack 5.",
   "type": "module",
   "main": "index.js",
   "exports": {
-    ".": "./index.js"
+    ".": "./index.js",
+    "./next": "./src/next.js"
   },
   "files": [
     "index.js",
@@ -19,12 +20,17 @@
   "keywords": [
     "react",
     "react19",
+    "react-19",
+    "findDOMNode",
+    "finddomnode",
+    "find-dom-node",
+    "nextjs",
+    "next",
+    "turbopack",
     "vite",
     "vite-plugin",
     "webpack",
     "webpack-plugin",
-    "finddomnode",
-    "find-dom-node",
     "compatibility",
     "migration",
     "react-transition-group",
@@ -47,11 +53,13 @@
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "vite": ">=5.0.0",
-    "webpack": ">=5.0.0"
+    "webpack": ">=5.0.0",
+    "next": ">=15.3.0"
   },
   "peerDependenciesMeta": {
     "vite": { "optional": true },
-    "webpack": { "optional": true }
+    "webpack": { "optional": true },
+    "next": { "optional": true }
   },
   "devDependencies": {
     "react": "19.3.0",

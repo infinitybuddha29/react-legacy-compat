@@ -5,3 +5,4 @@ dist-eval/
 .react-legacy-compat/
 *.tgz
 _research/
+.next/

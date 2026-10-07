@@ -4,3 +4,4 @@ export {
   ReactLegacyCompatWebpackPlugin,
 } from "./src/webpack-plugin.js";
 export { findDOMNode } from "./src/find-dom-node.js";
+export { withReactLegacyCompat } from "./src/next.js";

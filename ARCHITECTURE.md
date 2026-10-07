@@ -332,6 +332,61 @@ installs" below — analyzed, not exercised by a real target package:
   tested — no real target package in this project's verified set exercises
   Module Federation.
 
+## Next.js support
+
+### Why the Vite/webpack alias approach (D) doesn't carry over
+
+Next resolves `react-dom` to a *different file per compilation layer*
+(`next/dist/build/create-compiler-aliases.js`, Next 16.4): App Router
+client code gets Next's own vendored `next/dist/compiled/react-dom` (or
+`react-dom-experimental`), App Router SSR gets
+`next/dist/server/route-modules/app-page/vendored/ssr/react-dom`, and the
+Pages Router gets the project's installed `react-dom`. Next sets these as
+`react-dom$` aliases itself. Overriding them with one generated shim
+pointing at the project's `react-dom` would load a second React DOM into
+App Router pages next to the vendored one Next actually renders with.
+
+### Chosen: a loader on the react-dom entry file
+
+`withReactLegacyCompat` (`src/next.js`) registers `src/next-loader.cjs`
+for files matching `**/{react-dom,react-dom-experimental}/index.js` — in
+Turbopack via `turbopack.rules`, in webpack via the `webpack()` hook. The
+loader appends, inside that module's own CommonJS body,
+`module.exports.findDOMNode = <polyfill>` when it's missing. Next keeps
+choosing which react-dom file each layer gets; the loader just patches
+whichever one it chose, so there's still exactly one per layer.
+
+This is not approach C (runtime monkey-patch from outside) — C failed
+because by the time outside code runs, the bundler has already built a
+frozen namespace with a fixed export list. Here the property is added
+during react-dom's own module evaluation, before any importer reads it,
+and the module stays CommonJS so neither bundler freezes its exports.
+Verified directly: both Turbopack's
+`__TURBOPACK__imported__module__...findDOMNode` access and webpack's
+`react_dom__WEBPACK_IMPORTED_MODULE_N__.findDOMNode` access see it, and
+webpack's `Attempted import error: 'findDOMNode' is not exported` warning
+disappears.
+
+Decisions found by experiment, not assumed:
+
+- **Rule key is a path glob, not `condition: { path }`.** A key containing
+  `/` matches the full project-relative path (Next's turbopack docs);
+  `condition` only exists since Next 16.0. A first attempt with key
+  `*/index.js` matched nothing (`*` doesn't cross `/`).
+- **The polyfill is inlined, not `require()`d.** Turbopack refused to
+  resolve both an absolute path to `src/find-dom-node.js` and a bare
+  `react-legacy-compat/...` specifier when the package was symlinked in
+  from outside the project root (npm link / workspaces). `find-dom-node.js`
+  has no imports, so inlining its source is exact; the loader throws at
+  load time if that file ever grows another `export`.
+- **SSR layer isn't patched.** Its react-dom entry isn't an `index.js`;
+  `findDOMNode` is only ever called from lifecycle methods
+  (`componentDidMount` etc.), which don't run during server rendering.
+
+Verified on Next 16.4.0 (fixture `n01-next`, in `npm run verify`), and
+manually on 15.5.27 and 15.3.9. Below 15.3 the top-level `turbopack`
+config key doesn't exist.
+
 ## Known unsupported-internals risk (tracked, not hidden)
 
 `instance._reactInternals` is not part of React's public API and is not

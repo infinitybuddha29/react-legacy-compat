@@ -104,6 +104,22 @@ minification/mode-dependent codegen — so it isn't claimed to carry the
 same evidentiary weight as Vite's dev/build split; it's still run both
 ways for consistency and because it's cheap.
 
+## Next.js fixture (`fixtures/n01-next`)
+
+One fixture app, Next 16.4.0, with the same probe component
+(`components/Probe.jsx`) rendered from an App Router page (`/`) and a
+Pages Router page (`/legacy`), because Next resolves `react-dom` to a
+different file for each. The probe covers a named
+`import { findDOMNode } from 'react-dom'`, a `ReactDOM.findDOMNode(...)`
+call, and react-transition-group's `<CSSTransition>` without `nodeRef`.
+A run passes only if both routes report `ok: true`.
+
+`scripts/eval-fixture-next.mjs` runs it per bundler (Turbopack, and
+webpack via `--webpack`): baseline `next dev` without the wrapper must
+fail, then `next dev` and `next build` + `next start` with the wrapper
+must succeed. Next 15.5.27 and 15.3.9 were checked by hand with the same
+app (not in `verify`, to keep one Next install in the workspace).
+
 ## What counts as "demonstrates success"
 
 The same harness script's `window.__testResult` is `{ ok: true, tagName:

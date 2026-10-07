@@ -72,6 +72,7 @@ try {
     "packages/react-legacy-compat/test/find-dom-node.test.js",
     "packages/react-legacy-compat/test/vite-plugin.test.js",
     "packages/react-legacy-compat/test/webpack-plugin.test.js",
+    "packages/react-legacy-compat/test/next.test.js",
   ]); // kept explicit rather than a glob so `npm run verify` fails loudly
      // (ENOENT) if either file is ever renamed, instead of silently running 0 tests.
   const summaryLine = out.split("\n").find((l) => l.startsWith("# pass"));
@@ -247,6 +248,65 @@ for (const { name: fixture } of WEBPACK_FIXTURES) {
     }
   } catch (err) {
     fail(`compat webpack production build run crashed: ${err.stdout || err.message}`);
+  }
+}
+
+// --- 5. Next.js fixtures ---
+// Same principle again, through Next.js and withReactLegacyCompat. Run once
+// per bundler, since Next 16 ships two (Turbopack by default, webpack via
+// --webpack) and the wrapper configures each through a different hook.
+// Each run loads both an App Router and a Pages Router route, because Next
+// resolves `react-dom` to a different file for each (see src/next.js).
+const NEXT_FIXTURES = [{ name: "n01-next" }];
+const NEXT_BUNDLERS = ["turbopack", "webpack"];
+
+function evalFixtureNext(fixture, mode, compat, bundler) {
+  const out = run("node", [
+    "scripts/eval-fixture-next.mjs",
+    fixture,
+    mode,
+    compat ? "1" : "0",
+    bundler,
+  ]);
+  return JSON.parse(out);
+}
+
+for (const { name: fixture } of NEXT_FIXTURES) {
+  for (const bundler of NEXT_BUNDLERS) {
+    section(`Next.js fixture: ${fixture} (${bundler})`);
+
+    try {
+      const { result } = evalFixtureNext(fixture, "dev", false, bundler);
+      if (result.ok === false) {
+        pass(`baseline (next dev, no wrapper) correctly fails: ${result.error.slice(0, 200)}`);
+      } else {
+        fail(`baseline (next dev, no wrapper) did NOT fail as expected — got: ${JSON.stringify(result)}`);
+      }
+    } catch (err) {
+      fail(`baseline next dev run crashed: ${err.stdout || err.message}`);
+    }
+
+    try {
+      const { result } = evalFixtureNext(fixture, "dev", true, bundler);
+      if (result.ok === true) {
+        pass(`compat (next dev, wrapper enabled) succeeds`);
+      } else {
+        fail(`compat (next dev) FAILED: ${JSON.stringify(result)}`);
+      }
+    } catch (err) {
+      fail(`compat next dev run crashed: ${err.stdout || err.message}`);
+    }
+
+    try {
+      const { result } = evalFixtureNext(fixture, "build", true, bundler);
+      if (result.ok === true) {
+        pass(`compat (next build + start) succeeds`);
+      } else {
+        fail(`compat (next build) FAILED: ${JSON.stringify(result)}`);
+      }
+    } catch (err) {
+      fail(`compat next build run crashed: ${err.stdout || err.message}`);
+    }
   }
 }
 
