@@ -3,6 +3,9 @@
 [![npm version](https://img.shields.io/npm/v/react-legacy-compat.svg)](https://www.npmjs.com/package/react-legacy-compat)
 [![CI](https://github.com/infinitybuddha29/react-legacy-compat/actions/workflows/ci.yml/badge.svg)](https://github.com/infinitybuddha29/react-legacy-compat/actions/workflows/ci.yml)
 
+**Fix `findDOMNode is not a function` after upgrading to React 19 or
+Next.js 15/16 — without forking or patching the library that crashes.**
+
 Upgraded to React 19 (or to Next.js 15/16, which ships React 19) and now
 `react-transition-group`, `react-quill`, `react-draggable`, or some other
 legacy dependency crashes with one of:
@@ -18,6 +21,26 @@ Attempted import error: 'findDOMNode' is not exported from 'react-dom'
 **without editing anything inside `node_modules`**, and without forking
 or patching the broken package. One line in your Next.js, Vite or webpack
 config and it's fixed.
+
+## Libraries it's verified to fix
+
+Each of these crashes on React 19 out of the box and works with
+react-legacy-compat, checked in a real browser by `npm run verify`:
+
+| Library | What breaks on React 19 | Verified with |
+|---|---|---|
+| [react-transition-group](https://www.npmjs.com/package/react-transition-group) | `<Transition>` / `<CSSTransition>` without `nodeRef`: `findDOMNode is not a function` in `performEnter` | Next.js, Vite, webpack |
+| [react-quill](https://www.npmjs.com/package/react-quill) | `react_dom_1.default.findDOMNode is not a function`, editor never mounts | Vite |
+| [react-draggable](https://www.npmjs.com/package/react-draggable) | `<DraggableCore> not mounted on DragStart!` on the first drag | Vite |
+| [react-bootstrap-table-next](https://www.npmjs.com/package/react-bootstrap-table-next) | `expandRow`: clicking a row throws `findDOMNode is not a function` | Next.js |
+| [react-clipboard.js](https://www.npmjs.com/package/react-clipboard.js) | crashes on mount with `findDOMNode is not a function` | Next.js |
+
+Anything else that calls `ReactDOM.findDOMNode` (directly, via
+`import { findDOMNode } from "react-dom"`, or via `require("react-dom")`)
+is handled the same way. Libraries known to use it include
+react-sortable-hoc, react-virtualized, react-input-mask,
+react-visibility-sensor, react-overlays and react-pivottable, but those
+aren't in the verified set yet.
 
 ## Requirements
 
@@ -159,9 +182,10 @@ dependency, and react-transition-group) in both webpack `development` and
 rather than the full list.
 
 The Next.js wrapper is verified (fixture `n01-next`, Next 16.4) with a
-named import, a `ReactDOM.findDOMNode(...)` call and react-transition-group,
-each on both an App Router and a Pages Router page, under Turbopack and
-under webpack, in `next dev` and in `next build` + `next start`.
+named import, a `ReactDOM.findDOMNode(...)` call and react-transition-group
+on both an App Router and a Pages Router page, plus react-bootstrap-table-next
+(`expandRow`) and react-clipboard.js, under Turbopack and under webpack, in
+`next dev` and in `next build` + `next start`.
 
 ## Known limitations
 

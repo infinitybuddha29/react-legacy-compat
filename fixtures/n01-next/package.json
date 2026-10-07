@@ -8,6 +8,8 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-transition-group": "4.4.5",
-    "react-legacy-compat": "*"
+    "react-legacy-compat": "*",
+    "react-bootstrap-table-next": "4.0.3",
+    "react-clipboard.js": "2.0.16"
   }
 }

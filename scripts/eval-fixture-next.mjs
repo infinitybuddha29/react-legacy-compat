@@ -34,7 +34,7 @@ if (
   process.exit(2);
 }
 
-const ROUTES = ["/", "/legacy"];
+const ROUTES = ["/", "/legacy", "/bootstrap-table", "/clipboard"];
 const fixtureDir = path.resolve(__dirname, "..", "fixtures", fixtureDirArg);
 const nextBin = createRequire(path.join(fixtureDir, "package.json")).resolve(
   "next/dist/bin/next"

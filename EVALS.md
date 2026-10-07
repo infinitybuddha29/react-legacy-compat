@@ -112,7 +112,12 @@ Pages Router page (`/legacy`), because Next resolves `react-dom` to a
 different file for each. The probe covers a named
 `import { findDOMNode } from 'react-dom'`, a `ReactDOM.findDOMNode(...)`
 call, and react-transition-group's `<CSSTransition>` without `nodeRef`.
-A run passes only if both routes report `ok: true`.
+Two more App Router routes run unmodified real packages:
+`/bootstrap-table` (react-bootstrap-table-next 4.0.3, clicking a row with
+`expandRow`, which animates through react-transition-group) and
+`/clipboard` (react-clipboard.js 2.0.16, which calls `findDOMNode` on
+mount). A compat run passes only if every route reports `ok: true`; a
+baseline run passes only if every route fails.
 
 `scripts/eval-fixture-next.mjs` runs it per bundler (Turbopack, and
 webpack via `--webpack`): baseline `next dev` without the wrapper must

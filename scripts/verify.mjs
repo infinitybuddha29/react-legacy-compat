@@ -277,10 +277,12 @@ for (const { name: fixture } of NEXT_FIXTURES) {
 
     try {
       const { result } = evalFixtureNext(fixture, "dev", false, bundler);
-      if (result.ok === false) {
-        pass(`baseline (next dev, no wrapper) correctly fails: ${result.error.slice(0, 200)}`);
+      // Every route, not just one: each covers a different library.
+      const notFailing = Object.entries(result.routes).filter(([, r]) => r.ok !== false);
+      if (notFailing.length === 0) {
+        pass(`baseline (next dev, no wrapper) correctly fails on all ${Object.keys(result.routes).length} routes: ${result.error.slice(0, 160)}`);
       } else {
-        fail(`baseline (next dev, no wrapper) did NOT fail as expected — got: ${JSON.stringify(result)}`);
+        fail(`baseline (next dev, no wrapper) did NOT fail on: ${notFailing.map(([route]) => route).join(", ")}`);
       }
     } catch (err) {
       fail(`baseline next dev run crashed: ${err.stdout || err.message}`);
